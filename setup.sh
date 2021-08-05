@@ -28,13 +28,18 @@ TENANT_NAME=$(az ad signed-in-user show --query 'userPrincipalName' | cut -d '@'
 TENANT_ID=$(az account show --query "homeTenantId" -o tsv)
 PROCEED='n'
 echo "Operations will be done on Azure directory $TENANT_NAME ($TENANT_ID)."
-read -p "Do you want to proceed (y/N): " PROCEED
+read -n 1 -p "Do you want to proceed (y/N): " PROCEED
 [ "$PROCEED" = 'y' ] || exit
 
-# TODO explain what will be done here, people don't always read the README :)
+cat <<EOT
+
+A Service Principal will be created in order to give access to the Azure resources.
+This operation needs Azure Active Directory privilege for creating AAD application.
+After creating the Service Principal, you will be asked on which suscription the acces should be given.
+
+EOT
 
 # Create Service Principal
-echo ""
 INPUT_SPNAME="_"
 while [ ${#INPUT_SPNAME} -gt 0 ] && [ ${#INPUT_SPNAME} -lt 8 ] || [ "$(echo "$INPUT_SPNAME" | grep -i ' ')" ]
 do
@@ -60,25 +65,26 @@ The Service Principal will now be assigned the following roles on subscriptions:
   * Log Analytics Reader
 Please choose one or many subscriptions you want to assign rights on in the following list.
 EOT
-read -p "(Press enter to continue)" CONTINUEKEY
+read -s -n 1 -p "(Press any key to continue)" CONTINUEKEY
 
 az account list --query "[?homeTenantId==\`$TENANT_ID\`].join(\`\`, [name, \` (\`, id, \`)\`])" -o tsv | nl -s ") "  # FIXME space before parenthesis is missing
 SUBSCRIPTION_IDS=''
 SUBSCRIPTION_NUMBER=''
 while [ -z "$SUBSCRIPTION_NUMBER" ] || [ "$SUBSCRIPTION_NUMBER" != 0 ]
 do
-  # FIXME hitting enter without any value do things
+  # FIXME Better error management (ie. invalid index)
   # TODO be able to input subscription id also
-  read -p "Please enter a subscription number (0 to quit): " SUBSCRIPTION_NUMBER
-  [ "$SUBSCRIPTION_NUMBER" = '0' ] || [ -z "$SUBSCRIPTION_NUMBER" ] && break
+  echo ""
+  read -p "Please enter a subscription number (empty value to quit): " SUBSCRIPTION_NUMBER
+  [ -z "$SUBSCRIPTION_NUMBER" ] && break
 
   SUBSCRIPTION_ID=$(az account list --query "[?homeTenantId==\`$TENANT_ID\`]|[$((SUBSCRIPTION_NUMBER-1))].id" -o tsv)
   echo "Assigning rights to subscription $SUBSCRIPTION_ID"
-  az role assignment create --assignee "$SP_APP_ID" --role "Reader" --subscription "$SUBSCRIPTION_ID"
-  az role assignment create --assignee "$SP_APP_ID" --role "Cost Management Reader" --subscription "$SUBSCRIPTION_ID"
-  az role assignment create --assignee "$SP_APP_ID" --role "Log Analytics Reader" --subscription "$SUBSCRIPTION_ID"
+  az role assignment create --assignee "$SP_APP_ID" --role "Reader" --subscription "$SUBSCRIPTION_ID" > /dev/null
+  az role assignment create --assignee "$SP_APP_ID" --role "Cost Management Reader" --subscription "$SUBSCRIPTION_ID" > /dev/null
+  az role assignment create --assignee "$SP_APP_ID" --role "Log Analytics Reader" --subscription "$SUBSCRIPTION_ID" > /dev/null
   echo "Done assigning rights to subscription $SUBSCRIPTION_ID"
-  SUBSCRIPTION_IDS="$SUBSCRIPTION_IDS $SUBSCRIPTION_ID"
+  SUBSCRIPTION_IDS="$SUBSCRIPTION_IDS$SUBSCRIPTION_ID "
 done
 
 # TODO Create FrontDoor Service Principal and fetch Object Id
@@ -92,11 +98,13 @@ done
 # TODO output all needed information and ask to send it to Claranet
 # TODO Maybe save it to a local file to avoid any lost information ?
 cat <<EOT
-==============Created Service Principal==============
+
+======================Created Service Principal======================
 Tenant id:                      $TENANT_ID
+Tenant name:                    $TENANT_NAME
 Service Principal Name:         $SP_NAME
 Service Principal App id:       $SP_APP_ID
 Service Principal App secret:   $SP_APP_SECRET
 Service Principal Object id:    $SP_OBJECT_ID
-Assigned subscriptions:         $(echo "$SUBSCRIPTION_IDS" | sed "s/ /\n          /g")
+Assigned subscriptions:         $(echo "$SUBSCRIPTION_IDS" | sed "s/ /\n                                /g")
 EOT

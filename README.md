@@ -1,4 +1,4 @@
-# Claranet Azure onboarding script
+# Claranet Azure pre-configuration script
 
 The purpose of this script is to execute all necessary high privileges actions 
 needed by Claranet for Azure subscriptions management.

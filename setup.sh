@@ -71,20 +71,32 @@ EOT
 read -s -n 1 -r -p "(Press any key to continue)"
 
 printf "\n"
-az account list --query "[?homeTenantId=='$TENANT_ID'].join('', [name, ' (', id, ')'])" -o tsv | nl -s ") "
+SUBSCRIPTION_LIST=$(az account list --query "[?homeTenantId=='$TENANT_ID'].join('', [name, ' (', id, ')'])" -o tsv | nl -s ") ")
+echo "$SUBSCRIPTION_LIST"
+
+SUBSCRIPTION_COUNT=$(echo "$SUBSCRIPTION_LIST" | wc -l)
 SUBSCRIPTION_IDS=''
-SUBSCRIPTION_NUMBER=''
-while [ -z "$SUBSCRIPTION_NUMBER" ] || [ "$SUBSCRIPTION_NUMBER" != 0 ]
+
+while true
 do
-  # FIXME Better error management (ie. invalid index)
   # TODO be able to input subscription id also
-  read -r -p "Please enter a subscription number (empty value to quit): " SUBSCRIPTION_NUMBER
-  [ -z "$SUBSCRIPTION_NUMBER" ] && break
+  SUBSCRIPTION_NUMBER=''
+  while ! [[ "$SUBSCRIPTION_NUMBER" =~ ^[0-9]+$ ]] || [ "$SUBSCRIPTION_NUMBER" -lt 1 ] 2>/dev/null || [ "$SUBSCRIPTION_NUMBER" -gt "$SUBSCRIPTION_COUNT" ] 2>/dev/null
+  do
+    read -r -p "Please enter a subscription number (empty value to quit): " SUBSCRIPTION_NUMBER
+  [ -z "$SUBSCRIPTION_NUMBER" ] && break 2
+  done
 
   SUBSCRIPTION_ID=$(az account list --query "[?homeTenantId==\`$TENANT_ID\`]|[$((SUBSCRIPTION_NUMBER-1))].id" -o tsv)
   printf "\n"
   echo "Assigning rights to subscription $SUBSCRIPTION_ID"
-  az role assignment create --assignee "$SP_APP_ID" --role "Reader" --subscription "$SUBSCRIPTION_ID" > /dev/null
+  # shellcheck disable=SC2034
+  for try in {1..30}
+  do
+    # We need to loop due to Azure AD propagation latency
+    az role assignment create --assignee "$SP_APP_ID" --role "Reader" --subscription "$SUBSCRIPTION_ID" > /dev/null 2>&1 && break
+    sleep 3
+  done
   az role assignment create --assignee "$SP_APP_ID" --role "Cost Management Reader" --subscription "$SUBSCRIPTION_ID" > /dev/null
   az role assignment create --assignee "$SP_APP_ID" --role "Log Analytics Reader" --subscription "$SUBSCRIPTION_ID" > /dev/null
   echo "Done assigning rights to subscription $SUBSCRIPTION_ID"
@@ -130,7 +142,8 @@ then
       printf "\n"
       echo "Assigning $GROUP_ROLE right for group $GROUP_OBJECT_ID on subscription $SUB"
       # shellcheck disable=SC2034
-      for try in {1..10} ; do
+      for try in {1..30}
+      do
         # We need to loop due to Azure AD propagation latency
         az role assignment create --assignee "$GROUP_OBJECT_ID" --role "$GROUP_ROLE" --subscription "$SUB" > /dev/null 2>&1 && break
         sleep 3

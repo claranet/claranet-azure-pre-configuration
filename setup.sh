@@ -14,6 +14,8 @@ export AZURE_CORE_ONLY_SHOW_ERRORS=true
 DEFAULT_SPNAME="claranet-tools"
 DEFAULT_GROUPNAME="Claranet DevOps"
 FRONTDOOR_SP_ID="ad0e1c7e-6d38-4ba4-9efd-0bc77ba9f037"
+GROUP_ROLES_OPTIONS="Owner Contributor"
+SP_ROLES_LIST=("Reader" "Cost Management Reader" "Log Analytics Reader")
 
 if ! type az > /dev/null
 then
@@ -33,10 +35,10 @@ TENANT_ID=$(az account show --query "homeTenantId" -o tsv)
 PROCEED='n'
 echo "Operations will be done on Azure directory $TENANT_NAME ($TENANT_ID)."
 read -n 1 -r -p "Do you want to proceed (y/N): " PROCEED
-[ "$PROCEED" = 'y' ] || exit
+[[ "${PROCEED,,}" = 'y' ]] || exit
 
+printf "\n\n"
 cat <<EOT
-
 A Service Principal will be created in order to give access to the Azure resources.
 This operation needs Azure Active Directory privilege for creating AAD application.
 After creating the Service Principal, you will be asked on which subscription the access should be given.
@@ -45,7 +47,8 @@ EOT
 
 # Create Service Principal
 INPUT_SPNAME="_"
-while [ ${#INPUT_SPNAME} -gt 0 ] && [ ${#INPUT_SPNAME} -lt 8 ] || echo "$INPUT_SPNAME" | grep -i ' '
+# TODO replace with regex ?
+while [[ ${#INPUT_SPNAME} -gt 0 ]] && [[ ${#INPUT_SPNAME} -lt 8 ]] || echo "$INPUT_SPNAME" | grep -i ' '
 do
   read -r -p "Input name for your Service Principal with minimum length of 8 characters without space (press Enter to use default identifier \"$DEFAULT_SPNAME\"): " INPUT_SPNAME
 done
@@ -63,9 +66,7 @@ echo "Done creating Service Principal with id $SP_APP_ID"
 cat <<EOT
 
 The Service Principal will now be assigned the following roles on subscriptions:
-  * Reader
-  * Cost Management Reader
-  * Log Analytics Reader
+$(for role in "${SP_ROLES_LIST[@]}"; do echo "  * $role"; done)
 Please choose one or many subscriptions you want to assign rights on in the following list.
 EOT
 read -s -n 1 -r -p "(Press any key to continue)"
@@ -75,15 +76,19 @@ printf "\n"
 SUBSCRIPTION_IDS=''
 
 PS3="Select a subscription: "
+FINISHED_MESSAGE="Done configuring subscriptions"
+FINISHED_OPTION=$(echo -e "\033[3m$FINISHED_MESSAGE\033[23m")
 readarray -t SUBSCRIPTION_LIST < <(az account list --query "[?homeTenantId=='$TENANT_ID'].join('', [name, ' (', id, ')'])" -o tsv)
 while true
 do
   printf "\n"
-  select SUBSCRIPTION_CHOICE in "${SUBSCRIPTION_LIST[@]}"
+  select SUBSCRIPTION_CHOICE in "${SUBSCRIPTION_LIST[@]}" "$FINISHED_OPTION"
   do
     [[ -n $SUBSCRIPTION_CHOICE ]] || { echo "Invalid choice. Please try again." >&2; continue; }; break
   done
   SUBSCRIPTION_ID=${SUBSCRIPTION_CHOICE: -37:36}
+
+  [[ "$SUBSCRIPTION_CHOICE" = "$FINISHED_OPTION" ]] && break
 
   printf "\n"
   if [[ "$SUBSCRIPTION_IDS" =~ $SUBSCRIPTION_ID ]]
@@ -91,23 +96,21 @@ do
     echo "Rights already assigned for subscription \"$SUBSCRIPTION_CHOICE\""
   else
     echo "Assigning rights to subscription \"$SUBSCRIPTION_CHOICE\""
-    # shellcheck disable=SC2034
-    for try in {1..30}
+
+    for role in "${SP_ROLES_LIST[@]}"
     do
-      # We need to loop due to Azure AD propagation latency
-      az role assignment create --assignee "$SP_APP_ID" --role "Reader" --subscription "$SUBSCRIPTION_ID" > /dev/null 2>&1 && break
-      sleep 3
+      # shellcheck disable=SC2034
+      for try in {1..30}
+      do
+        # We need to loop due to Azure AD propagation latency
+        az role assignment create --assignee "$SP_APP_ID" --role "$role" --subscription "$SUBSCRIPTION_ID" > /dev/null 2>&1 && break
+        sleep 3
+      done
     done
-    az role assignment create --assignee "$SP_APP_ID" --role "Cost Management Reader" --subscription "$SUBSCRIPTION_ID" > /dev/null
-    az role assignment create --assignee "$SP_APP_ID" --role "Log Analytics Reader" --subscription "$SUBSCRIPTION_ID" > /dev/null
     echo "Done assigning rights to subscription \"$SUBSCRIPTION_CHOICE\""
     printf "\n"
     SUBSCRIPTION_IDS="$SUBSCRIPTION_IDS$SUBSCRIPTION_ID "
   fi
-
-  PROCEED='y'
-  read -n 1 -r -p "Do you want to add rights on another subscription (Y/n): " PROCEED
-  [ "$PROCEED" = 'n' ] && break
 done
 
 # Getting Azure FrontDoor Object ID from service principal ID
@@ -120,8 +123,9 @@ echo "Azure FrontDoor service object ID: $FRONTDOOR_OBJECT_ID"
 printf "\n\n"
 read -n 1 -r -p "Would you like to create a group in Active Directory for Claranet users (Recommended) ? (Y/n): " PROCEED
 
-if [ "$PROCEED" = '' ] || [ "$PROCEED" = 'y' ]
+if [[ "$PROCEED" = '' ]] || [[ "${PROCEED,,}" = 'y' ]]
 then
+  printf "\n"
   read -r -p "Input name for Claranet Group (press Enter to use default name \"$DEFAULT_GROUPNAME\"): " INPUT_GROUPNAME
   GROUP_NAME=${INPUT_GROUPNAME:-$DEFAULT_GROUPNAME}
   printf "\n"
@@ -133,15 +137,14 @@ then
 
   printf "\n"
   read -n 1 -r -p "Would you like to give rights for this group on previously selected subscriptions ? (Y/n): " PROCEED
-  if [ "$PROCEED" = '' ] || [ "$PROCEED" = 'y' ]
+  if [[ "$PROCEED" = '' ]] || [[ "${PROCEED,,}" = 'y' ]]
   then
-    while [ "$INPUT_ROLE" != '1' ] && [ "$INPUT_ROLE" != '2' ]
+    PS3="Choose a role: "
+    echo "Which role should have this group on previously selected subscriptions ?"
+    select GROUP_ROLE in $GROUP_ROLES_OPTIONS
     do
-      read -n 1 -r -p "Which role should have this group on previously selected subscriptions ? 1) Owner 2) Contributor (Type 1 or 2): " INPUT_ROLE
-      printf "\n"
+      [[ -n $GROUP_ROLE ]] || { echo "Invalid choice. Please try again." >&2; continue; }; break
     done
-    [ "$INPUT_ROLE" = '1' ] && GROUP_ROLE="Owner"
-    [ "$INPUT_ROLE" = '2' ] && GROUP_ROLE="Contributor"
 
     for SUB in $SUBSCRIPTION_IDS
     do
@@ -161,6 +164,7 @@ fi
 
 FILENAME=claranet_onboarding-$(date -u +"%Y%m%d-%H%M%S").txt
 # Output information
+printf "\n\n"
 echo "Please send all the following information to your Claranet contact in a secure way"
 # shellcheck disable=SC2001
 cat <<EOT | tee ~/"$FILENAME"

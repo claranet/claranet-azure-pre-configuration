@@ -71,37 +71,43 @@ EOT
 read -s -n 1 -r -p "(Press any key to continue)"
 
 printf "\n"
-SUBSCRIPTION_LIST=$(az account list --query "[?homeTenantId=='$TENANT_ID'].join('', [name, ' (', id, ')'])" -o tsv | nl -s ") ")
-echo "$SUBSCRIPTION_LIST"
 
-SUBSCRIPTION_COUNT=$(echo "$SUBSCRIPTION_LIST" | wc -l)
 SUBSCRIPTION_IDS=''
 
+PS3="Select a subscription: "
+readarray -t SUBSCRIPTION_LIST < <(az account list --query "[?homeTenantId=='$TENANT_ID'].join('', [name, ' (', id, ')'])" -o tsv)
 while true
 do
-  # TODO be able to input subscription id also
-  SUBSCRIPTION_NUMBER=''
-  while ! [[ "$SUBSCRIPTION_NUMBER" =~ ^[0-9]+$ ]] || [ "$SUBSCRIPTION_NUMBER" -lt 1 ] 2>/dev/null || [ "$SUBSCRIPTION_NUMBER" -gt "$SUBSCRIPTION_COUNT" ] 2>/dev/null
+  printf "\n"
+  select SUBSCRIPTION_CHOICE in "${SUBSCRIPTION_LIST[@]}"
   do
-    read -r -p "Please enter a subscription number (empty value to quit): " SUBSCRIPTION_NUMBER
-  [ -z "$SUBSCRIPTION_NUMBER" ] && break 2
+    [[ -n $SUBSCRIPTION_CHOICE ]] || { echo "Invalid choice. Please try again." >&2; continue; }; break
   done
+  SUBSCRIPTION_ID=${SUBSCRIPTION_CHOICE: -37:36}
 
-  SUBSCRIPTION_ID=$(az account list --query "[?homeTenantId==\`$TENANT_ID\`]|[$((SUBSCRIPTION_NUMBER-1))].id" -o tsv)
   printf "\n"
-  echo "Assigning rights to subscription $SUBSCRIPTION_ID"
-  # shellcheck disable=SC2034
-  for try in {1..30}
-  do
-    # We need to loop due to Azure AD propagation latency
-    az role assignment create --assignee "$SP_APP_ID" --role "Reader" --subscription "$SUBSCRIPTION_ID" > /dev/null 2>&1 && break
-    sleep 3
-  done
-  az role assignment create --assignee "$SP_APP_ID" --role "Cost Management Reader" --subscription "$SUBSCRIPTION_ID" > /dev/null
-  az role assignment create --assignee "$SP_APP_ID" --role "Log Analytics Reader" --subscription "$SUBSCRIPTION_ID" > /dev/null
-  echo "Done assigning rights to subscription $SUBSCRIPTION_ID"
-  printf "\n"
-  SUBSCRIPTION_IDS="$SUBSCRIPTION_IDS$SUBSCRIPTION_ID "
+  if [[ "$SUBSCRIPTION_IDS" =~ $SUBSCRIPTION_ID ]]
+  then
+    echo "Rights already assigned for subscription \"$SUBSCRIPTION_CHOICE\""
+  else
+    echo "Assigning rights to subscription \"$SUBSCRIPTION_CHOICE\""
+    # shellcheck disable=SC2034
+    for try in {1..30}
+    do
+      # We need to loop due to Azure AD propagation latency
+      az role assignment create --assignee "$SP_APP_ID" --role "Reader" --subscription "$SUBSCRIPTION_ID" > /dev/null 2>&1 && break
+      sleep 3
+    done
+    az role assignment create --assignee "$SP_APP_ID" --role "Cost Management Reader" --subscription "$SUBSCRIPTION_ID" > /dev/null
+    az role assignment create --assignee "$SP_APP_ID" --role "Log Analytics Reader" --subscription "$SUBSCRIPTION_ID" > /dev/null
+    echo "Done assigning rights to subscription \"$SUBSCRIPTION_CHOICE\""
+    printf "\n"
+    SUBSCRIPTION_IDS="$SUBSCRIPTION_IDS$SUBSCRIPTION_ID "
+  fi
+
+  PROCEED='y'
+  read -n 1 -r -p "Do you want to add rights on another subscription (Y/n): " PROCEED
+  [ "$PROCEED" = 'n' ] && break
 done
 
 # Getting Azure FrontDoor Object ID from service principal ID

@@ -19,7 +19,7 @@ A report is generated at the end of the script and needs to be provided to Clara
 
 In order to play this script, you'll need:
 * Azure Active Directory privileges for creating Service Principals
-* A terminal with the Azure CLI configured (it can be Azure Cloud Shell)
+* A terminal with the Azure CLI configured (it can be [Azure Cloud Shell](https://docs.microsoft.com/en-us/azure/cloud-shell/overview))
 * Azure Subscriptions to configure rights on them
 
 # How to use it
@@ -28,8 +28,18 @@ In order to play this script, you'll need:
 
 You can find Azure Cloud Shell documentation here: [https://docs.microsoft.com/en-us/azure/cloud-shell/overview](https://docs.microsoft.com/en-us/azure/cloud-shell/overview)
 
-_TODO_
+Open Azure Cloud Shell from the Azure portal in Bash mode and launch the following command:
+```shell
+curl -s https://raw.githubusercontent.com/claranet/claranet-azure-pre-configuration/master/setup.sh | bash
+```
+
+![Azure Cloud Shell usage](azure-cloud-shell.png "a title")
 
 ## From your terminal
 
-_TODO_
+Either clone this repository or download the script `setup.sh` locally and launch it in your terminal or launch the
+following command locally:
+
+```shell
+curl -s https://raw.githubusercontent.com/claranet/claranet-azure-pre-configuration/master/setup.sh | bash
+```

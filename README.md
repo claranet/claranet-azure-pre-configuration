@@ -30,7 +30,7 @@ You can find Azure Cloud Shell documentation here: [https://docs.microsoft.com/e
 
 Open Azure Cloud Shell from the Azure portal in Bash mode and launch the following command:
 ```shell
-curl -s https://raw.githubusercontent.com/claranet/claranet-azure-pre-configuration/master/setup.sh | bash
+bash <(curl -s https://raw.githubusercontent.com/claranet/claranet-azure-pre-configuration/master/setup.sh)
 ```
 
 ![Azure Cloud Shell usage](azure-cloud-shell.png "a title")
@@ -41,5 +41,5 @@ Either clone this repository or download the script `setup.sh` locally and launc
 following command locally:
 
 ```shell
-curl -s https://raw.githubusercontent.com/claranet/claranet-azure-pre-configuration/master/setup.sh | bash
+bash <(curl -s https://raw.githubusercontent.com/claranet/claranet-azure-pre-configuration/master/setup.sh)
 ```

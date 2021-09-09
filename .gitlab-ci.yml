@@ -1,0 +1,9 @@
+---
+stages:
+  - lint
+
+shellcheck:
+  stage: lint
+  image: registry.gitlab.com/pipeline-components/shellcheck:latest
+  script:
+    - shellcheck setup.sh

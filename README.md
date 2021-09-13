@@ -37,7 +37,7 @@ Open Azure Cloud Shell from the Azure portal in Bash mode and launch the followi
 bash <(curl -s https://raw.githubusercontent.com/claranet/claranet-azure-pre-configuration/master/setup.sh)
 ```
 
-![Azure Cloud Shell usage](azure-cloud-shell.png "a title")
+![Azure Cloud Shell usage](azure-cloud-shell.png)
 
 ## From your terminal
 
@@ -52,8 +52,8 @@ bash <(curl -s https://raw.githubusercontent.com/claranet/claranet-azure-pre-con
 
 ## I can't see my subscription in the list
 
-If the subscription has been recently created, be sure to you've logged in with the Azure CLI after the subscription 
-creation. This issue should not occur when using the Azure Cloud Shell method. 
+If the subscription has been recently created, be sure to you've logged in with the Azure CLI after the subscription creation.
+This issue should not occur when using the Azure Cloud Shell method. 
 
 You can do this with the following command:
 ```shell

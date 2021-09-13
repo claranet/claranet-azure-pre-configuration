@@ -7,10 +7,27 @@
 #
 #   This script will return clientID, tenantID, client-secret that must be provided to Claranet on a secure way.
 
-set -e
+set -euo pipefail
 
+# Avoid `azure-cli` traces/debug
 export AZURE_CORE_ONLY_SHOW_ERRORS=true
 
+# Terminal colors
+# Colorize and add text parameters
+red=$(tput setaf 1)             #  red
+# grn=$(tput setaf 2)             #  green
+# blu=$(tput setaf 4)             #  blue
+# ora=$(tput setaf 3)             #  yellow/orange
+# cya=$(tput setaf 6)             #  cyan
+txtbld=$(tput bold)             # Bold
+bldred=${txtbld}$(tput setaf 1) #  red
+bldgrn=${txtbld}$(tput setaf 2) #  green
+# bldblu=${txtbld}$(tput setaf 4) #  blue
+bldora=${txtbld}$(tput setaf 3) #  yellow/orange
+# bldcya=${txtbld}$(tput setaf 6) #  cyan
+txtrst=$(tput sgr0)             # Reset
+
+# Script main variables
 DEFAULT_SPNAME="claranet-tools"
 DEFAULT_GROUPNAME="Claranet DevOps"
 FRONTDOOR_SP_ID="ad0e1c7e-6d38-4ba4-9efd-0bc77ba9f037"
@@ -19,21 +36,21 @@ SP_ROLES_LIST=("Reader" "Cost Management Reader" "Log Analytics Reader")
 
 if ! type az > /dev/null
 then
-    echo "Azure CLI is not installed. Please install Azure CLI by following tutorial at https://docs.microsoft.com/en-us/cli/azure/install-azure-cli"
+    echo "${bldred}Azure CLI is not installed. Please install Azure CLI by following tutorial at https://docs.microsoft.com/en-us/cli/azure/install-azure-cli${txtrst}"
     exit 1
 fi
 
 # Check if user needs to login
 if ! az resource list > /dev/null 2>&1
 then
-    echo "You must be logged in with Azure CLI. Try running \"az login\". More information here: https://docs.microsoft.com/en-us/cli/azure/get-started-with-azure-cli#how-to-sign-into-the-azure-cli"
+    echo "${bldred}You must be logged in with Azure CLI. Try running \"az login\". More information here: https://docs.microsoft.com/en-us/cli/azure/get-started-with-azure-cli#how-to-sign-into-the-azure-cli${txtrst}"
     exit 1
 fi
 
 TENANT_NAME=$(az ad signed-in-user show --query 'userPrincipalName' | cut -d '@' -f 2 | sed 's/\"//')
 TENANT_ID=$(az account show --query "homeTenantId" -o tsv)
 PROCEED='n'
-echo "Operations will be done on Azure directory $TENANT_NAME ($TENANT_ID)."
+echo "Operations will be done on Azure directory ${TENANT_NAME} (${TENANT_ID})."
 read -n 1 -r -p "Do you want to proceed (y/N): " PROCEED
 [[ "${PROCEED,,}" = 'y' ]] || exit
 
@@ -43,7 +60,8 @@ A Service Principal will be created in order to give access to the Azure resourc
 This operation needs Azure Active Directory privilege for creating AAD application.
 After creating the Service Principal, you will be asked on which subscription the access should be given.
 
-/!\ If you input the name of an existing service principal, the existing one will be used instead of creating a new one but the secret will be reset.
+${bldora}⚠/!\ If you input the name of an existing service principal, the existing one will be used instead of creating a new one but the secret will be reset. ⚠/!\\
+${txtrst}
 
 EOT
 
@@ -52,7 +70,7 @@ INPUT_SPNAME="_"
 # TODO replace with regex ?
 while [[ ${#INPUT_SPNAME} -gt 0 ]] && [[ ${#INPUT_SPNAME} -lt 8 ]] || echo "$INPUT_SPNAME" | grep -i ' '
 do
-  read -r -p "Input name for your Service Principal with minimum length of 8 characters without space (press Enter to use default identifier \"$DEFAULT_SPNAME\"): " INPUT_SPNAME
+  read -r -p "Input name for your Service Principal with minimum length of 8 characters without space (press Enter to use default identifier \"${DEFAULT_SPNAME}\"): " INPUT_SPNAME
 done
 SP_NAME=${INPUT_SPNAME:-$DEFAULT_SPNAME}
 
@@ -78,15 +96,14 @@ printf "\n"
 SUBSCRIPTION_IDS=''
 
 PS3="Select a subscription: "
-FINISHED_MESSAGE="Done configuring subscriptions"
-FINISHED_OPTION=$(echo -e "\033[3m$FINISHED_MESSAGE\033[23m")
+FINISHED_OPTION=$(echo -e "${bldgrn}Done configuring subscriptions${txtrst}")
 readarray -t SUBSCRIPTION_LIST < <(az account list --query "[?homeTenantId=='$TENANT_ID'].join('', [name, ' (', id, ')'])" -o tsv)
 while true
 do
   printf "\n"
   select SUBSCRIPTION_CHOICE in "${SUBSCRIPTION_LIST[@]}" "$FINISHED_OPTION"
   do
-    [[ -n $SUBSCRIPTION_CHOICE ]] || { echo "Invalid choice. Please try again." >&2; continue; }; break
+    [[ -n $SUBSCRIPTION_CHOICE ]] || { echo "${red}Invalid choice. Please try again.${txtrst}" >&2; continue; }; break
   done
   SUBSCRIPTION_ID=${SUBSCRIPTION_CHOICE: -37:36}
 
@@ -187,4 +204,4 @@ Claranet AD group role:         $GROUP_ROLE
 
 EOT
 
-echo "Note: the previous information has been stored in file $FILENAME in your home folder."
+echo "Note: the previous information has been stored in ~/$FILENAME file."

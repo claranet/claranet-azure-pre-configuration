@@ -204,4 +204,4 @@ Claranet AD group role:         $GROUP_ROLE
 
 EOT
 
-echo "Note: the previous information has been stored in ~/$FILENAME file."
+echo "Note: the previous information has been stored in ~/${FILENAME} file."

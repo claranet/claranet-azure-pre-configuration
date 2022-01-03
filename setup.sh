@@ -60,7 +60,7 @@ A Service Principal will be created in order to give access to the Azure resourc
 This operation needs Azure Active Directory privilege for creating AAD application.
 After creating the Service Principal, you will be asked on which subscription the access should be given.
 
-${bldora}⚠/!\ If you input the name of an existing service principal, the existing one will be used instead of creating a new one but the secret will be reset. ⚠/!\\
+${bldora}/!\ ⚠ If you input the name of an existing service principal, the existing one will be used instead of creating a new one but the secret will be reset. ⚠ /!\\
 ${txtrst}
 
 EOT
@@ -181,7 +181,7 @@ then
   fi
 fi
 
-FILENAME=claranet_onboarding-$(date -u +"%Y%m%d-%H%M%S").txt
+FILENAME=claranet_setup-$(date -u +"%Y%m%d-%H%M%S").txt
 # Output information
 printf "\n\n"
 echo "Please send all the following information to your Claranet contact in a secure way"

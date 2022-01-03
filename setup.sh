@@ -97,6 +97,9 @@ else
     echo "Resetting Service Principal \"$SP_NAME\" password"
     create_az_sp
     echo "Done resetting Service Principal with id $SP_APP_ID"
+  else
+    SP_APP_SECRET="(existing password not changed)"
+    SP_OBJECT_ID=$(az ad sp show --id "$SP_APP_ID" --query 'objectId' -o tsv)
   fi
 fi
 

@@ -22,6 +22,10 @@ In order to play this script, you'll need:
 * A terminal with the Azure CLI configured (it can be [Azure Cloud Shell](https://docs.microsoft.com/en-us/azure/cloud-shell/overview))
 * Azure Subscriptions to configure rights on them
 
+# Important notes
+
+If the given service principal name already exists, the script will re-use the existing one but reset its secret.
+
 # How to use it
 
 ## With Azure Cloud Shell (recommended)
@@ -33,7 +37,7 @@ Open Azure Cloud Shell from the Azure portal in Bash mode and launch the followi
 bash <(curl -s https://raw.githubusercontent.com/claranet/claranet-azure-pre-configuration/master/setup.sh)
 ```
 
-![Azure Cloud Shell usage](azure-cloud-shell.png "a title")
+![Azure Cloud Shell usage](azure-cloud-shell.png)
 
 ## From your terminal
 
@@ -42,4 +46,16 @@ following command locally:
 
 ```shell
 bash <(curl -s https://raw.githubusercontent.com/claranet/claranet-azure-pre-configuration/master/setup.sh)
+```
+
+# Troubleshooting
+
+## I can't see my subscription in the list
+
+If the subscription has been recently created, be sure to you've logged in with the Azure CLI after the subscription creation.
+This issue should not occur when using the Azure Cloud Shell method. 
+
+You can do this with the following command:
+```shell
+az login
 ```

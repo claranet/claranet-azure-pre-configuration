@@ -24,7 +24,7 @@ In order to play this script, you'll need:
 
 # Important notes
 
-If the given service principal name already exists, the script will re-use the existing one but reset its secret.
+If the given service principal name already exists, the script will re-use the existing one.
 
 # How to use it
 

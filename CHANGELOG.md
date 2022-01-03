@@ -2,6 +2,7 @@
 
 Added
   * AZ-571: Add pre-commit config hook
+  * AZ-571: Check for existing Azure SP before trying to create a new one
 
 Fixed
   * AZ-571: Change command to retrieve Tenant name/domain

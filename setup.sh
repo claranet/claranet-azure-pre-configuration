@@ -142,6 +142,9 @@ echo "Azure FrontDoor service object ID: $FRONTDOOR_OBJECT_ID"
 printf "\n\n"
 read -n 1 -r -p "Would you like to create a group in Active Directory for Claranet users (Recommended) ? (Y/n): " PROCEED
 
+GROUP_NAME="N/A"
+GROUP_OBJECT_ID="N/A"
+GROUP_ROLE="N/A"
 if [[ "$PROCEED" = '' ]] || [[ "${PROCEED,,}" = 'y' ]]
 then
   printf "\n"

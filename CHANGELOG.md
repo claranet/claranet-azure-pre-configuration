@@ -1,6 +1,6 @@
-# Unreleased
+# v1.0.1 - 2022-01-03
 
-Added
+Changed
   * AZ-571: Improved documentation and instructions
 
 # v1.0.0 - 2021-09-09

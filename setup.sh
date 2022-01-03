@@ -70,7 +70,6 @@ function create_az_sp() {
   SP_RESULT=$(az ad sp create-for-rbac -n "$SP_NAME" --skip-assignment --query "join('#', [appId,password])" -o tsv)
   SP_APP_ID=$(echo "$SP_RESULT" | cut -f1 -d'#')
   SP_APP_SECRET=$(echo "$SP_RESULT" | cut -f2 -d'#')
-  SP_OBJECT_ID=$(az ad sp show --id "$SP_APP_ID" --query 'objectId' -o tsv)
 }
 
 # Create Service Principal
@@ -99,9 +98,10 @@ else
     echo "Done resetting Service Principal with id $SP_APP_ID"
   else
     SP_APP_SECRET="(existing password not changed)"
-    SP_OBJECT_ID=$(az ad sp show --id "$SP_APP_ID" --query 'objectId' -o tsv)
   fi
 fi
+
+SP_OBJECT_ID=$(az ad sp show --id "$SP_APP_ID" --query 'objectId' -o tsv)
 
 cat <<EOT
 

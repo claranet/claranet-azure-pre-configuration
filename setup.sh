@@ -15,9 +15,9 @@ export AZURE_CORE_ONLY_SHOW_ERRORS=true
 # Terminal colors
 # Colorize and add text parameters
 red=$(tput setaf 1)             #  red
-# grn=$(tput setaf 2)             #  green
+grn=$(tput setaf 2)             #  green
 # blu=$(tput setaf 4)             #  blue
-# ora=$(tput setaf 3)             #  yellow/orange
+ora=$(tput setaf 3)             #  yellow/orange
 # cya=$(tput setaf 6)             #  cyan
 txtbld=$(tput bold)             # Bold
 bldred=${txtbld}$(tput setaf 1) #  red
@@ -89,23 +89,25 @@ if [ -z "$SP_APP_ID" ]; then
   echo "Service Principal \"$SP_NAME\" not found"
   echo "Creating Service Principal \"$SP_NAME\""
   create_az_sp
-  echo "Done creating Service Principal with id $SP_APP_ID"
+  echo "${grn}Done creating Service Principal with id $SP_APP_ID ${txtrst}"
 else
-  echo "Service Principal \"$SP_NAME\" found with AppId \"$SP_APP_ID\""
+  printf "\n"
+  echo "${ora}Service Principal \"$SP_NAME\" found with AppId \"$SP_APP_ID\" ${txtrst}"
+  printf "\n"
   read -n 1 -r -p "Do you want to reset the password of the current Service Principal \"$SP_NAME\" ($SP_APP_ID) (y/N): " RESETPWD
   if [[ "${RESETPWD,,}" = 'y' ]]; then
     echo "Resetting Service Principal \"$SP_NAME\" password"
     create_az_sp
-    echo "Done resetting Service Principal with id $SP_APP_ID"
+    echo "${grn}Done resetting Service Principal with id $SP_APP_ID ${txtrst}"
   else
     printf "\n"
     read -n 1 -r -p "Do you want to add a new password secret to the current Service Principal \"$SP_NAME\" ($SP_APP_ID) (y/N): " NEWPWD
     if [[ "${NEWPWD,,}" = 'y' ]]; then
       printf "\n"
       SP_APP_SECRET=$(az ad sp credential reset -n "$SP_NAME" --append --credential-description "$TODAY" --query "password" -o tsv)
-      echo "Done creating a new secret password for Service Principal with id $SP_APP_ID"
+      echo "${grn}Done creating a new secret password for Service Principal with id $SP_APP_ID ${txtrst}"
     else
-      SP_APP_SECRET="(existing password/secret not changed)"
+      SP_APP_SECRET="${ora}(existing password/secret not changed) ${txtrst}"
     fi
   fi
 fi
@@ -216,7 +218,7 @@ fi
 FILENAME=claranet_setup-${TODAY}.txt
 # Output information
 printf "\n\n"
-echo "Please send all the following information to your Claranet contact in a secure way"
+echo "Please send all the following information ${bldred}to your Claranet contact in a secure way.${txtrst}"
 # shellcheck disable=SC2001
 cat <<EOT | tee ~/"$FILENAME"
 

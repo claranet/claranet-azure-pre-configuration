@@ -127,6 +127,7 @@ else
 fi
 
 SP_OBJECT_ID=$(az ad sp show --id "$SP_APP_ID" --query 'objectId' -o tsv)
+SP_PWD_ENDDATES=$(az ad sp credential list --id "$SP_APP_ID" --query "[].{Name:customKeyIdentifier, Expire:endDate}" -o tsv)
 
 cat <<EOT
 
@@ -237,17 +238,18 @@ echo "Please send all the following information ${bldred}to your Claranet contac
 cat <<EOT | tee ~/"$FILENAME"
 
 ========================== Sensitive information ===========================================================
-Tenant id:                      $TENANT_ID
-Tenant name:                    $TENANT_NAME
-Service Principal Name:         $SP_NAME
-Service Principal App id:       $SP_APP_ID
-Service Principal App secret:   $SP_APP_SECRET
-Service Principal Object id:    $SP_OBJECT_ID
-Assigned subscriptions:         $(echo "$SUBSCRIPTION_IDS" | sed "s/ /\n                                /g")
-FrontDoor identity object id:   $FRONTDOOR_OBJECT_ID
-Claranet AD group name:         $GROUP_NAME
-Claranet AD group object id:    $GROUP_OBJECT_ID
-Claranet AD group role:         $GROUP_ROLE
+Tenant id:                                    $TENANT_ID
+Tenant name:                                  $TENANT_NAME
+Service Principal Name:                       $SP_NAME
+Service Principal App id:                     $SP_APP_ID
+Service Principal App secret:                 $SP_APP_SECRET
+Service Principal Passwords expiration date:  $(echo "$SP_PWD_ENDDATES" | sed "s/ /\n                                /g")
+Service Principal Object id:                  $SP_OBJECT_ID
+Assigned subscriptions:                       $(echo "$SUBSCRIPTION_IDS" | sed "s/ /\n                                /g")
+FrontDoor identity object id:                 $FRONTDOOR_OBJECT_ID
+Claranet AD group name:                       $GROUP_NAME
+Claranet AD group object id:                  $GROUP_OBJECT_ID
+Claranet AD group role:                       $GROUP_ROLE
 ============================================================================================================
 
 EOT

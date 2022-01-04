@@ -73,6 +73,7 @@ function set_az_sp_pwd_duration() {
   do
     read -r -p "Input number of years for your Service Principal password duration (press Enter to use default value \"$DEFAULT_SP_PWD_DURATION_YEARS\")" INPUT_SP_Y
   done
+  printf "\n"
   SP_DURATION_Y=${INPUT_SP_Y:-$DEFAULT_SP_PWD_DURATION_YEARS}
 }
 
@@ -107,6 +108,7 @@ else
   printf "\n"
   read -n 1 -r -p "Do you want to reset the password of the current Service Principal \"$SP_NAME\" ($SP_APP_ID) (y/N): " RESETPWD
   if [[ "${RESETPWD,,}" = 'y' ]]; then
+    printf "\n"
     echo "Resetting Service Principal \"$SP_NAME\" password"
     create_az_sp
     echo "${grn}Done resetting Service Principal with id $SP_APP_ID ${txtrst}"

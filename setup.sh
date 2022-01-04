@@ -127,7 +127,6 @@ else
 fi
 
 SP_OBJECT_ID=$(az ad sp show --id "$SP_APP_ID" --query 'objectId' -o tsv)
-SP_PWD_ENDDATES=$(az ad sp credential list --id "$SP_APP_ID" --query "[].{Name:customKeyIdentifier, Expire:endDate}" -o tsv)
 
 cat <<EOT
 
@@ -243,8 +242,10 @@ Tenant name:                                  $TENANT_NAME
 Service Principal Name:                       $SP_NAME
 Service Principal App id:                     $SP_APP_ID
 Service Principal App secret:                 $SP_APP_SECRET
-Service Principal Passwords expiration date:  $(echo "$SP_PWD_ENDDATES" | sed "s/ /\n                                /g")
 Service Principal Object id:                  $SP_OBJECT_ID
+Service Principal Passwords expiration date:
+$(az ad sp credential list --id "$SP_APP_ID" --query "[].{Name:customKeyIdentifier, Expire:endDate}" -o table)
+
 Assigned subscriptions:                       $(echo "$SUBSCRIPTION_IDS" | sed "s/ /\n                                /g")
 FrontDoor identity object id:                 $FRONTDOOR_OBJECT_ID
 Claranet AD group name:                       $GROUP_NAME

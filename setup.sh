@@ -91,7 +91,7 @@ if [ -z "$SP_APP_ID" ]; then
   echo "Done creating Service Principal with id $SP_APP_ID"
 else
   echo "Service Principal \"$SP_NAME\" found with AppId \"$SP_APP_ID\""
-  read -n 1 -r -p "Do you want to reset the password of the current Service Principal \"$SP_NAME\"($SP_APP_ID) (y/N): " RESETPWD
+  read -n 1 -r -p "Do you want to reset the password of the current Service Principal \"$SP_NAME\" ($SP_APP_ID) (y/N): " RESETPWD
   if [[ "${RESETPWD,,}" = 'y' ]]; then
     echo "Resetting Service Principal \"$SP_NAME\" password"
     create_az_sp

@@ -28,6 +28,7 @@ bldora=${txtbld}$(tput setaf 3) #  yellow/orange
 txtrst=$(tput sgr0)             # Reset
 
 # Script main variables
+TODAY=$(date -u +"%Y%m%d-%H%M%S")
 DEFAULT_SPNAME="claranet-tools"
 DEFAULT_GROUPNAME="Claranet DevOps"
 FRONTDOOR_SP_ID="ad0e1c7e-6d38-4ba4-9efd-0bc77ba9f037"
@@ -97,7 +98,15 @@ else
     create_az_sp
     echo "Done resetting Service Principal with id $SP_APP_ID"
   else
-    SP_APP_SECRET="(existing password not changed)"
+    printf "\n"
+    read -n 1 -r -p "Do you want to add a new password secret to the current Service Principal \"$SP_NAME\" ($SP_APP_ID) (y/N): " NEWPWD
+    if [[ "${NEWPWD,,}" = 'y' ]]; then
+      printf "\n"
+      SP_APP_SECRET=$(az ad sp credential reset -n "$SP_NAME" --append --credential-description "$TODAY" --query "password" -o tsv)
+      echo "Done creating a new secret password for Service Principal with id $SP_APP_ID"
+    else
+      SP_APP_SECRET="(existing password/secret not changed)"
+    fi
   fi
 fi
 
@@ -204,7 +213,7 @@ then
   fi
 fi
 
-FILENAME=claranet_setup-$(date -u +"%Y%m%d-%H%M%S").txt
+FILENAME=claranet_setup-${TODAY}.txt
 # Output information
 printf "\n\n"
 echo "Please send all the following information to your Claranet contact in a secure way"

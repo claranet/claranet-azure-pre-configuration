@@ -71,7 +71,7 @@ function set_az_sp_pwd_duration() {
   INPUT_SP_Y="_"
   until [[ "$INPUT_SP_Y" =~ ^[0-9]+$ ]] || [[ -z "$INPUT_SP_Y" ]]
   do
-    read -r -p "Input number of years for your Service Principal password duration (press Enter to use default value \"$DEFAULT_SP_PWD_DURATION_YEARS\")" INPUT_SP_Y
+    read -r -p "Input Service Principal password expiration delay in years (Default \"$DEFAULT_SP_PWD_DURATION_YEARS\"): " INPUT_SP_Y
   done
   printf "\n"
   SP_DURATION_Y=${INPUT_SP_Y:-$DEFAULT_SP_PWD_DURATION_YEARS}

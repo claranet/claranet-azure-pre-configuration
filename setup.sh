@@ -47,6 +47,7 @@ then
     exit 1
 fi
 
+# TODO: Fix Tenant name query with "global" users admin
 TENANT_NAME=$(az ad signed-in-user show --query 'userPrincipalName' | cut -d '@' -f 2 | sed 's/\"//')
 TENANT_ID=$(az account show --query "homeTenantId" -o tsv)
 PROCEED='n'

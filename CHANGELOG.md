@@ -1,3 +1,8 @@
+# Unreleased
+
+Added
+  * AZ-571: Add pre-commit config hook
+
 # v1.0.1 - 2022-01-03
 
 Changed

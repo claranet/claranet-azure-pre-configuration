@@ -243,9 +243,7 @@ Service Principal Name:                       $SP_NAME
 Service Principal App id:                     $SP_APP_ID
 Service Principal App secret:                 $SP_APP_SECRET
 Service Principal Object id:                  $SP_OBJECT_ID
-Service Principal Passwords expiration date:
-$(az ad sp credential list --id "$SP_APP_ID" --query "[].{Name:customKeyIdentifier, Expire:endDate}" -o table)
-
+Service Principal Passwords expiration date:  $(az ad sp credential list --id "$SP_APP_ID" --query "[].[customKeyIdentifier, endDate]" -o tsv | column -t | sed -E 's/T([0-9]{2}[:\.]){3}[0-9]{6}\+([0-9]{2}:?){2}//' | sed '2,$s/^/                                              /g')
 Assigned subscriptions:                       $(echo "$SUBSCRIPTION_IDS" | sed "s/ /\n                                /g")
 FrontDoor identity object id:                 $FRONTDOOR_OBJECT_ID
 Claranet AD group name:                       $GROUP_NAME

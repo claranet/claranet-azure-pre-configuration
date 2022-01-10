@@ -3,6 +3,9 @@
 Added
   * AZ-571: Add pre-commit config hook
 
+Fixed
+  * AZ-571: Change command to retrieve Tenant name/domain
+
 # v1.0.1 - 2022-01-03
 
 Changed

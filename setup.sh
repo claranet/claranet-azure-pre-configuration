@@ -47,8 +47,7 @@ then
     exit 1
 fi
 
-# TODO: Fix Tenant name query with "global" users admin
-TENANT_NAME=$(az ad signed-in-user show --query 'userPrincipalName' | cut -d '@' -f 2 | sed 's/\"//')
+TENANT_NAME=$(az rest --method get --url https://graph.microsoft.com/v1.0/domains --query 'value[?isDefault].id' -o tsv)
 TENANT_ID=$(az account show --query "homeTenantId" -o tsv)
 PROCEED='n'
 echo "Operations will be done on Azure directory ${TENANT_NAME} (${TENANT_ID})."

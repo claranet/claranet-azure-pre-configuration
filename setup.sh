@@ -244,7 +244,7 @@ Service Principal App id:                     $SP_APP_ID
 Service Principal App secret:                 $SP_APP_SECRET
 Service Principal Object id:                  $SP_OBJECT_ID
 Service Principal Passwords expiration date:  $(az ad sp credential list --id "$SP_APP_ID" --query "[].[customKeyIdentifier, endDate]" -o tsv | column -t | sed -E 's/T([0-9]{2}[:\.]){3}[0-9]{6}\+([0-9]{2}:?){2}//' | sed '2,$s/^/                                              /g')
-Assigned subscriptions:                       $(echo "$SUBSCRIPTION_IDS" | sed "s/ /\n                                /g")
+Assigned subscriptions:                       $(if [ -z "$SUBSCRIPTION_IDS" ]; then echo "${ora}(No subscription assigned)${txtrst}"; else echo "$SUBSCRIPTION_IDS" | sed "s/ /\n                   /g"; fi)
 FrontDoor identity object id:                 $FRONTDOOR_OBJECT_ID
 Claranet AD group name:                       $GROUP_NAME
 Claranet AD group object id:                  $GROUP_OBJECT_ID

@@ -15,9 +15,9 @@ export AZURE_CORE_ONLY_SHOW_ERRORS=true
 # Terminal colors
 # Colorize and add text parameters
 red=$(tput setaf 1)             #  red
-# grn=$(tput setaf 2)             #  green
+grn=$(tput setaf 2)             #  green
 # blu=$(tput setaf 4)             #  blue
-# ora=$(tput setaf 3)             #  yellow/orange
+ora=$(tput setaf 3)             #  yellow/orange
 # cya=$(tput setaf 6)             #  cyan
 txtbld=$(tput bold)             # Bold
 bldred=${txtbld}$(tput setaf 1) #  red
@@ -28,6 +28,7 @@ bldora=${txtbld}$(tput setaf 3) #  yellow/orange
 txtrst=$(tput sgr0)             # Reset
 
 # Script main variables
+TODAY=$(date -u +"%Y%m%d-%H%M%S")
 DEFAULT_SPNAME="claranet-tools"
 DEFAULT_GROUPNAME="Claranet DevOps"
 FRONTDOOR_SP_ID="ad0e1c7e-6d38-4ba4-9efd-0bc77ba9f037"
@@ -60,10 +61,17 @@ A Service Principal will be created in order to give access to the Azure resourc
 This operation needs Azure Active Directory privilege for creating AAD application.
 After creating the Service Principal, you will be asked on which subscription the access should be given.
 
-${bldora}/!\ ⚠ If you input the name of an existing service principal, the existing one will be used instead of creating a new one but the secret will be reset. ⚠ /!\\
+${bldora}If you input the name of an existing service principal, the existing one will be used instead of creating a new one.
 ${txtrst}
 
 EOT
+
+function create_az_sp() {
+  # TODO manage fails
+  SP_RESULT=$(az ad sp create-for-rbac -n "$SP_NAME" --skip-assignment --query "join('#', [appId,password])" -o tsv)
+  SP_APP_ID=$(echo "$SP_RESULT" | cut -f1 -d'#')
+  SP_APP_SECRET=$(echo "$SP_RESULT" | cut -f2 -d'#')
+}
 
 # Create Service Principal
 INPUT_SPNAME="_"
@@ -75,13 +83,36 @@ done
 SP_NAME=${INPUT_SPNAME:-$DEFAULT_SPNAME}
 
 printf "\n"
-echo "Creating Service Principal \"$SP_NAME\""
-# TODO manage fails
-SP_RESULT=$(az ad sp create-for-rbac -n "$SP_NAME" --skip-assignment --query "join('#', [appId,password])" -o tsv)
-SP_APP_ID=$(echo "$SP_RESULT" | cut -f1 -d'#')
-SP_APP_SECRET=$(echo "$SP_RESULT" | cut -f2 -d'#')
+echo "Checking if Service Principal \"$SP_NAME\" already exists"
+SP_APP_ID=$(az ad sp list --query "[?displayName=='$SP_NAME'].appId" -o tsv)
+if [ -z "$SP_APP_ID" ]; then
+  echo "Service Principal \"$SP_NAME\" not found"
+  echo "Creating Service Principal \"$SP_NAME\""
+  create_az_sp
+  echo "${grn}Done creating Service Principal with id $SP_APP_ID ${txtrst}"
+else
+  printf "\n"
+  echo "${ora}Service Principal \"$SP_NAME\" found with AppId \"$SP_APP_ID\" ${txtrst}"
+  printf "\n"
+  read -n 1 -r -p "Do you want to reset the password of the current Service Principal \"$SP_NAME\" ($SP_APP_ID) (y/N): " RESETPWD
+  if [[ "${RESETPWD,,}" = 'y' ]]; then
+    echo "Resetting Service Principal \"$SP_NAME\" password"
+    create_az_sp
+    echo "${grn}Done resetting Service Principal with id $SP_APP_ID ${txtrst}"
+  else
+    printf "\n"
+    read -n 1 -r -p "Do you want to add a new password secret to the current Service Principal \"$SP_NAME\" ($SP_APP_ID) (y/N): " NEWPWD
+    if [[ "${NEWPWD,,}" = 'y' ]]; then
+      printf "\n"
+      SP_APP_SECRET=$(az ad sp credential reset -n "$SP_NAME" --append --credential-description "$TODAY" --query "password" -o tsv)
+      echo "${grn}Done creating a new secret password for Service Principal with id $SP_APP_ID ${txtrst}"
+    else
+      SP_APP_SECRET="${ora}(existing password/secret not changed) ${txtrst}"
+    fi
+  fi
+fi
+
 SP_OBJECT_ID=$(az ad sp show --id "$SP_APP_ID" --query 'objectId' -o tsv)
-echo "Done creating Service Principal with id $SP_APP_ID"
 
 cat <<EOT
 
@@ -184,10 +215,10 @@ then
   fi
 fi
 
-FILENAME=claranet_setup-$(date -u +"%Y%m%d-%H%M%S").txt
+FILENAME=claranet_setup-${TODAY}.txt
 # Output information
 printf "\n\n"
-echo "Please send all the following information to your Claranet contact in a secure way"
+echo "Please send all the following information ${bldred}to your Claranet contact in a secure way.${txtrst}"
 # shellcheck disable=SC2001
 cat <<EOT | tee ~/"$FILENAME"
 

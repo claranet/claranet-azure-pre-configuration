@@ -30,6 +30,7 @@ txtrst=$(tput sgr0)             # Reset
 # Script main variables
 TODAY=$(date -u +"%Y%m%d-%H%M%S")
 DEFAULT_SPNAME="claranet-tools"
+DEFAULT_SP_PWD_DURATION_YEARS=1
 DEFAULT_GROUPNAME="Claranet DevOps"
 FRONTDOOR_SP_ID="ad0e1c7e-6d38-4ba4-9efd-0bc77ba9f037"
 GROUP_ROLES_OPTIONS="Owner Contributor"
@@ -66,9 +67,20 @@ ${txtrst}
 
 EOT
 
+function set_az_sp_pwd_duration() {
+  INPUT_SP_Y="_"
+  until [[ "$INPUT_SP_Y" =~ ^[0-9]+$ ]] || [[ -z "$INPUT_SP_Y" ]]
+  do
+    read -r -p "Input Service Principal password expiration delay in years (Default \"$DEFAULT_SP_PWD_DURATION_YEARS\"): " INPUT_SP_Y
+  done
+  printf "\n"
+  SP_DURATION_Y=${INPUT_SP_Y:-$DEFAULT_SP_PWD_DURATION_YEARS}
+}
+
 function create_az_sp() {
   # TODO manage fails
-  SP_RESULT=$(az ad sp create-for-rbac -n "$SP_NAME" --skip-assignment --query "join('#', [appId,password])" -o tsv)
+  set_az_sp_pwd_duration
+  SP_RESULT=$(az ad sp create-for-rbac -n "$SP_NAME" --years "$SP_DURATION_Y" --skip-assignment --query "join('#', [appId,password])" -o tsv)
   SP_APP_ID=$(echo "$SP_RESULT" | cut -f1 -d'#')
   SP_APP_SECRET=$(echo "$SP_RESULT" | cut -f2 -d'#')
 }
@@ -96,6 +108,7 @@ else
   printf "\n"
   read -n 1 -r -p "Do you want to reset the password of the current Service Principal \"$SP_NAME\" ($SP_APP_ID) (y/N): " RESETPWD
   if [[ "${RESETPWD,,}" = 'y' ]]; then
+    printf "\n"
     echo "Resetting Service Principal \"$SP_NAME\" password"
     create_az_sp
     echo "${grn}Done resetting Service Principal with id $SP_APP_ID ${txtrst}"
@@ -104,7 +117,8 @@ else
     read -n 1 -r -p "Do you want to add a new password secret to the current Service Principal \"$SP_NAME\" ($SP_APP_ID) (y/N): " NEWPWD
     if [[ "${NEWPWD,,}" = 'y' ]]; then
       printf "\n"
-      SP_APP_SECRET=$(az ad sp credential reset -n "$SP_NAME" --append --credential-description "$TODAY" --query "password" -o tsv)
+      set_az_sp_pwd_duration
+      SP_APP_SECRET=$(az ad sp credential reset -n "$SP_NAME" --years "$SP_DURATION_Y" --append --credential-description "$TODAY" --query "password" -o tsv)
       echo "${grn}Done creating a new secret password for Service Principal with id $SP_APP_ID ${txtrst}"
     else
       SP_APP_SECRET="${ora}(existing password/secret not changed) ${txtrst}"
@@ -223,17 +237,18 @@ echo "Please send all the following information ${bldred}to your Claranet contac
 cat <<EOT | tee ~/"$FILENAME"
 
 ========================== Sensitive information ===========================================================
-Tenant id:                      $TENANT_ID
-Tenant name:                    $TENANT_NAME
-Service Principal Name:         $SP_NAME
-Service Principal App id:       $SP_APP_ID
-Service Principal App secret:   $SP_APP_SECRET
-Service Principal Object id:    $SP_OBJECT_ID
-Assigned subscriptions:         $(echo "$SUBSCRIPTION_IDS" | sed "s/ /\n                                /g")
-FrontDoor identity object id:   $FRONTDOOR_OBJECT_ID
-Claranet AD group name:         $GROUP_NAME
-Claranet AD group object id:    $GROUP_OBJECT_ID
-Claranet AD group role:         $GROUP_ROLE
+Tenant id:                                    $TENANT_ID
+Tenant name:                                  $TENANT_NAME
+Service Principal Name:                       $SP_NAME
+Service Principal App id:                     $SP_APP_ID
+Service Principal App secret:                 $SP_APP_SECRET
+Service Principal Object id:                  $SP_OBJECT_ID
+Service Principal Passwords expiration date:  $(az ad sp credential list --id "$SP_APP_ID" --query "[].[customKeyIdentifier, endDate]" -o tsv | column -t | sed -E 's/T([0-9]{2}[:\.]){3}[0-9]{6}\+([0-9]{2}:?){2}//' | sed '2,$s/^/                                              /g')
+Assigned subscriptions:                       $(if [ -z "$SUBSCRIPTION_IDS" ]; then echo "${ora}(No subscription assigned)${txtrst}"; else echo "$SUBSCRIPTION_IDS" | sed "s/ /\n                   /g"; fi)
+FrontDoor identity object id:                 $FRONTDOOR_OBJECT_ID
+Claranet AD group name:                       $GROUP_NAME
+Claranet AD group object id:                  $GROUP_OBJECT_ID
+Claranet AD group role:                       $GROUP_ROLE
 ============================================================================================================
 
 EOT

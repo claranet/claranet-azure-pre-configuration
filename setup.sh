@@ -177,6 +177,18 @@ do
   fi
 done
 
+# Ask to add Reservations Reader a the tenant Level to be able to see Shared Reservations
+printf "\n\n"
+read -n 1 -r -p "Do you want to allow the SP to read Shared Reservations (Recommended) ? (Y/n): " PROCEED
+if [[ "$PROCEED" = '' ]] || [[ "${PROCEED,,}" = 'y' ]]
+then
+  printf "\n"
+  echo "Assigning Reservations Reader role to ${SP_APP_ID}"
+  az role assignment create --assignee "$SP_APP_ID" --role "Reservations Reader" --scope /providers/Microsoft.Capacity > /dev/null
+  echo "Done assigning Reservations Reader at the Tenant level"
+  printf "\n"
+fi
+
 # Getting Azure FrontDoor Object ID from service principal ID
 printf "\n\n"
 echo "Fetching Azure FrontDoor service object ID"

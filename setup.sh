@@ -178,6 +178,7 @@ do
 done
 
 # Ask to add Reservations Reader a the tenant Level to be able to see Shared Reservations
+RESERVATIONREADER="No"
 printf "\n\n"
 read -n 1 -r -p "Do you want to allow the SP to read Shared Reservations (Recommended) ? (Y/n): " PROCEED
 if [[ "$PROCEED" = '' ]] || [[ "${PROCEED,,}" = 'y' ]]
@@ -185,6 +186,7 @@ then
   printf "\n"
   echo "Assigning Reservations Reader role to ${SP_APP_ID}"
   az role assignment create --assignee "$SP_APP_ID" --role "Reservations Reader" --scope /providers/Microsoft.Capacity > /dev/null
+  RESERVATIONREADER="Yes"
   echo "Done assigning Reservations Reader at the Tenant level"
   printf "\n"
 fi
@@ -261,6 +263,7 @@ FrontDoor identity object id:                 $FRONTDOOR_OBJECT_ID
 Claranet AD group name:                       $GROUP_NAME
 Claranet AD group object id:                  $GROUP_OBJECT_ID
 Claranet AD group role:                       $GROUP_ROLE
+Reservation Reader Role assigned:             $RESERVATIONREADER
 ============================================================================================================
 
 EOT

@@ -9,7 +9,7 @@ This includes:
     * [_Reader_](https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#reader) for inventory and monitoring purposes
     * [_Cost Management Reader_](https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#cost-management-reader) for FinOps purposes
     * [_Log Analytics Reader_](https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#log-analytics-reader) for monitoring purpose
-* specific right assignment at the tenant level to read reservations for finops purposes
+* Specific right assignment at the tenant level to read Reservations for FinOps purposes
     * [_Reservation Reader_](https://learn.microsoft.com/en-us/azure/cost-management-billing/reservations/view-reservations#view-reservations-with-azure-rbac-access)
 * Optional creation of a "Claranet DevOps" user group and rights assignment on subscriptions
 * FrontDoor service principal creation for FrontDoor identity management. 

@@ -184,7 +184,7 @@ read -n 1 -r -p "Do you want to allow the SP to read Shared Reservations (Recomm
 if [[ "$PROCEED" = '' ]] || [[ "${PROCEED,,}" = 'y' ]]
 then
   printf "\n"
-  echo "Assigning Reservations Reader role to ${SP_APP_ID}"
+  echo "Assigning ${bldgrn}Reservations Reader${txtrst} role to '${SP_APP_ID}'"
   az role assignment create --assignee "$SP_APP_ID" --role "Reservations Reader" --scope /providers/Microsoft.Capacity > /dev/null
   RESERVATIONREADER="Yes"
   echo "Done assigning Reservations Reader at the Tenant level"

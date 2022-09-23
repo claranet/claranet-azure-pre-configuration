@@ -5,12 +5,16 @@ needed by Claranet for Azure subscriptions management.
 
 This includes:
 * Creation of a "claranet-tools" (or any other given name) [service principal](https://docs.microsoft.com/en-us/azure/active-directory/develop/app-objects-and-service-principals)
-* Rights assignment of this service principal to needed subscription with following rights
+* Creation of a "claranet-deploy" (or any other given name) [service principal](https://docs.microsoft.com/en-us/azure/active-directory/develop/app-objects-and-service-principals)
+* Rights assignment of Reader service principal on selected Subscription(s) with following rights:
     * [_Reader_](https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#reader) for inventory and monitoring purposes
     * [_Cost Management Reader_](https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#cost-management-reader) for FinOps purposes
     * [_Log Analytics Reader_](https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#log-analytics-reader) for monitoring purpose
 * Specific right assignment at the tenant level to read Reservations for FinOps purposes
     * [_Reservation Reader_](https://learn.microsoft.com/en-us/azure/cost-management-billing/reservations/view-reservations#view-reservations-with-azure-rbac-access)
+* Rights assignment of Deployment service principal on selected Subscription(s) with following rights:
+    * [_Contributor_](https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#contributor) for Claranet deployment tools
+    * [_User Access Administrator_](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#user-access-administrator) for Claranet deployment tools
 * Optional creation of a "Claranet DevOps" user group and rights assignment on subscriptions
 * FrontDoor service principal creation for FrontDoor identity management. 
   See [Related documentation](https://docs.microsoft.com/en-us/azure/frontdoor/standard-premium/how-to-configure-https-custom-domain#register-azure-front-door)

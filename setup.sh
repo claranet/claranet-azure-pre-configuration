@@ -30,11 +30,13 @@ txtrst=$(tput sgr0)             # Reset
 # Script main variables
 TODAY=$(date -u +"%Y%m%d-%H%M%S")
 DEFAULT_SPNAME="claranet-tools"
+DEFAULT_SPNAME_DEPLOY="claranet-deploy"
 DEFAULT_SP_PWD_DURATION_YEARS=1
 DEFAULT_GROUPNAME="Claranet DevOps"
 FRONTDOOR_SP_ID="ad0e1c7e-6d38-4ba4-9efd-0bc77ba9f037"
 GROUP_ROLES_OPTIONS="Owner Contributor"
 SP_ROLES_LIST=("Reader" "Cost Management Reader" "Log Analytics Reader")
+SP_DEPLOY_ROLES_LIST=("Contributor" "User Access Administrator")
 
 if ! type az > /dev/null
 then
@@ -58,7 +60,7 @@ read -n 1 -r -p "Do you want to proceed (y/N): " PROCEED
 
 printf "\n\n"
 cat <<EOT
-A Service Principal will be created in order to give access to the Azure resources.
+2 Service Principals will be created in order to give access to the Azure resources, one with read permission the other for Claranet deployment tools.
 This operation needs Azure Active Directory privilege for creating AAD application.
 After creating the Service Principal, you will be asked on which subscription the access should be given.
 
@@ -80,9 +82,9 @@ function set_az_sp_pwd_duration() {
 function create_az_sp() {
   # TODO manage fails
   set_az_sp_pwd_duration
-  SP_RESULT=$(az ad sp create-for-rbac -n "$SP_NAME" --years "$SP_DURATION_Y" --skip-assignment --query "join('#', [appId,password])" -o tsv)
-  SP_APP_ID=$(echo "$SP_RESULT" | cut -f1 -d'#')
-  SP_APP_SECRET=$(echo "$SP_RESULT" | cut -f2 -d'#')
+  SP_RESULT=$(az ad sp create-for-rbac -n "$1" --years "$SP_DURATION_Y" --skip-assignment --query "join('#', [appId,password])" -o tsv)
+  SP_HASH[$1"_APP_ID"]=$(echo "$SP_RESULT" | cut -f1 -d'#')
+  SP_HASH[$1"_APP_SECRET"]=$(echo "$SP_RESULT" | cut -f2 -d'#')
 }
 
 # Create Service Principal
@@ -90,48 +92,67 @@ INPUT_SPNAME="_"
 # TODO replace with regex ?
 while [[ ${#INPUT_SPNAME} -gt 0 ]] && [[ ${#INPUT_SPNAME} -lt 8 ]] || echo "$INPUT_SPNAME" | grep -i ' '
 do
-  read -r -p "Input name for your Service Principal with minimum length of 8 characters without space (press Enter to use default identifier \"${DEFAULT_SPNAME}\"): " INPUT_SPNAME
+  read -r -p "Input name for your ${bldgrn}Reader Service Principal${txtrst} with minimum length of 8 characters without space (press Enter to use default identifier \"${DEFAULT_SPNAME}\"): " INPUT_SPNAME
 done
 SP_NAME=${INPUT_SPNAME:-$DEFAULT_SPNAME}
 
+INPUT_SPNAME_DEPLOY="_"
+while [[ ${#INPUT_SPNAME_DEPLOY} -gt 0 ]] && [[ ${#INPUT_SPNAME_DEPLOY} -lt 8 ]] || echo "$INPUT_SPNAME_DEPLOY" | grep -i ' '
+do
+  read -r -p "Input name for your ${bldgrn}Deployment Service Principal${txtrst} with minimum length of 8 characters without space (press Enter to use default identifier \"${DEFAULT_SPNAME_DEPLOY}\"): " INPUT_SPNAME_DEPLOY
+done
+SP_NAME_DEPLOY=${INPUT_SPNAME_DEPLOY:-$DEFAULT_SPNAME_DEPLOY}
+
+declare -A SP_HASH
 printf "\n"
-echo "Checking if Service Principal \"$SP_NAME\" already exists"
-SP_APP_ID=$(az ad sp list --query "[?displayName=='$SP_NAME'].appId" -o tsv)
-if [ -z "$SP_APP_ID" ]; then
-  echo "Service Principal \"$SP_NAME\" not found"
-  echo "Creating Service Principal \"$SP_NAME\""
-  create_az_sp
-  echo "${grn}Done creating Service Principal with id $SP_APP_ID ${txtrst}"
-else
+echo "Checking if Service Principals \"$SP_NAME\" and \"$SP_NAME_DEPLOY\" already exist"
+for sp in $SP_NAME $SP_NAME_DEPLOY
+do
+  SP_ID=$(az ad sp list --query "[?displayName=='$sp'].appId" --all -o tsv)
   printf "\n"
-  echo "${ora}Service Principal \"$SP_NAME\" found with AppId \"$SP_APP_ID\" ${txtrst}"
-  printf "\n"
-  read -n 1 -r -p "Do you want to reset the password of the current Service Principal \"$SP_NAME\" ($SP_APP_ID) (y/N): " RESETPWD
-  if [[ "${RESETPWD,,}" = 'y' ]]; then
+  if [ -z "$SP_ID" ]; then
+    echo "Service Principal \"$sp\" not found"
+    echo "Creating Service Principal \"$sp\""
     printf "\n"
-    echo "Resetting Service Principal \"$SP_NAME\" password"
-    create_az_sp
-    echo "${grn}Done resetting Service Principal with id $SP_APP_ID ${txtrst}"
+    create_az_sp "$sp"
+    echo "${grn}Done creating Service Principal with id ${SP_HASH[$sp"_APP_ID"]} ${txtrst}"
   else
+    echo "${ora}Service Principal \"$sp\" found with AppId \"$SP_ID\" ${txtrst}"
     printf "\n"
-    read -n 1 -r -p "Do you want to add a new password secret to the current Service Principal \"$SP_NAME\" ($SP_APP_ID) (y/N): " NEWPWD
-    if [[ "${NEWPWD,,}" = 'y' ]]; then
+    SP_HASH[$sp"_APP_ID"]="$SP_ID"
+    read -n 1 -r -p "Do you want to reset the password of the current Service Principal \"$sp\" ($SP_ID) (y/N): " RESETPWD
+    if [[ "${RESETPWD,,}" = 'y' ]]; then
       printf "\n"
-      set_az_sp_pwd_duration
-      SP_APP_SECRET=$(az ad sp credential reset -n "$SP_NAME" --years "$SP_DURATION_Y" --append --credential-description "$TODAY" --query "password" -o tsv)
-      echo "${grn}Done creating a new secret password for Service Principal with id $SP_APP_ID ${txtrst}"
+      echo "Resetting Service Principal \"$sp\" password"
+      create_az_sp "$sp"
+      echo "${grn}Done resetting Service Principal with id ${SP_HASH[$sp"_APP_ID"]} ${txtrst}"
     else
-      SP_APP_SECRET="${ora}(existing password/secret not changed) ${txtrst}"
+      printf "\n"
+      read -n 1 -r -p "Do you want to add a new password secret to the current Service Principal \"$sp\" ($SP_ID) (y/N): " NEWPWD
+      printf "\n"
+      if [[ "${NEWPWD,,}" = 'y' ]]; then
+        printf "\n"
+        set_az_sp_pwd_duration
+        SP_HASH[$sp"_APP_SECRET"]=$(az ad sp credential reset -n "$sp" --years "$SP_DURATION_Y" --append --credential-description "$TODAY" --query "password" -o tsv)
+        echo "${grn}Done creating a new secret password for Service Principal with id $SP_ID ${txtrst}"
+      else
+        SP_HASH[$sp"_APP_SECRET"]="${ora}(existing password/secret not changed) ${txtrst}"
+      fi
     fi
   fi
-fi
+done
 
-SP_OBJECT_ID=$(az ad sp show --id "$SP_APP_ID" --query 'objectId' -o tsv)
+SP_HASH[$SP_NAME"_OBJECT_ID"]=$(az ad app show --id "${SP_HASH[$SP_NAME"_APP_ID"]}" --query 'id' -o tsv)
+SP_HASH[$SP_NAME_DEPLOY"_OBJECT_ID"]=$(az ad app show --id "${SP_HASH[$SP_NAME_DEPLOY"_APP_ID"]}" --query 'id' -o tsv)
 
 cat <<EOT
 
-The Service Principal will now be assigned the following roles on subscriptions:
+The Reader Service Principal $SP_NAME will now be assigned the following roles on subscriptions:
 $(for role in "${SP_ROLES_LIST[@]}"; do echo "  * $role"; done)
+
+The Deployment Service Principal $SP_NAME_DEPLOY will now be assigned the following roles on subscriptions:
+$(for role in "${SP_DEPLOY_ROLES_LIST[@]}"; do echo "  * $role"; done)
+
 Please choose one or many subscriptions you want to assign rights on in the following list.
 EOT
 read -s -n 1 -r -p "(Press any key to continue)"
@@ -157,19 +178,33 @@ do
   printf "\n"
   if [[ "$SUBSCRIPTION_IDS" =~ $SUBSCRIPTION_ID ]]
   then
-    echo "Rights already assigned for subscription \"$SUBSCRIPTION_CHOICE\""
+    echo "Rights already assigned for subscription '$SUBSCRIPTION_CHOICE'"
   else
-    echo "Assigning rights to subscription \"$SUBSCRIPTION_CHOICE\""
-
     for role in "${SP_ROLES_LIST[@]}"
     do
+      echo "Assigning '$role' right for '$SP_NAME' to subscription '$SUBSCRIPTION_CHOICE'"
       # shellcheck disable=SC2034
       for try in {1..30}
       do
         # We need to loop due to Azure AD propagation latency
-        az role assignment create --assignee "$SP_APP_ID" --role "$role" --subscription "$SUBSCRIPTION_ID" > /dev/null 2>&1 && break
+        az role assignment create --assignee "${SP_HASH[$SP_NAME"_APP_ID"]}" --role "$role" --subscription "$SUBSCRIPTION_ID" > /dev/null 2>&1 && break
+        echo -n "."
         sleep 3
       done
+      printf "\n"
+    done
+    for role in "${SP_DEPLOY_ROLES_LIST[@]}"
+    do
+      echo "Assigning '$role' right for '$SP_NAME_DEPLOY' to subscription '$SUBSCRIPTION_CHOICE'"
+      # shellcheck disable=SC2034
+      for try in {1..30}
+      do
+        # We need to loop due to Azure AD propagation latency
+        az role assignment create --assignee "${SP_HASH[$SP_NAME_DEPLOY"_APP_ID"]}" --role "$role" --subscription "$SUBSCRIPTION_ID" > /dev/null 2>&1 && break
+        echo -n "."
+        sleep 3
+      done
+      printf "\n"
     done
     echo "Done assigning rights to subscription \"$SUBSCRIPTION_CHOICE\""
     printf "\n"
@@ -184,8 +219,8 @@ read -n 1 -r -p "Do you want to allow the SP to read Shared Reservations (Recomm
 if [[ "$PROCEED" = '' ]] || [[ "${PROCEED,,}" = 'y' ]]
 then
   printf "\n"
-  echo "Assigning ${bldgrn}Reservations Reader${txtrst} role to '${SP_APP_ID}'"
-  az role assignment create --assignee "$SP_APP_ID" --role "Reservations Reader" --scope /providers/Microsoft.Capacity > /dev/null
+  echo "Assigning ${bldgrn}Reservations Reader${txtrst} role to '$SP_NAME (${SP_HASH[$SP_NAME"_APP_ID"]})'"
+  az role assignment create --assignee "${SP_HASH[$SP_NAME"_APP_ID"]}" --role "Reservations Reader" --scope /providers/Microsoft.Capacity > /dev/null
   RESERVATIONREADER="Yes"
   echo "Done assigning Reservations Reader at the Tenant level"
   printf "\n"
@@ -194,7 +229,7 @@ fi
 # Getting Azure FrontDoor Object ID from service principal ID
 printf "\n\n"
 echo "Fetching Azure FrontDoor service object ID"
-FRONTDOOR_OBJECT_ID=$(az ad sp show --id "$FRONTDOOR_SP_ID" --query objectId -o tsv 2>/dev/null || az ad sp create --id "$FRONTDOOR_SP_ID" --query objectId -o tsv)
+FRONTDOOR_OBJECT_ID=$(az ad sp show --id "$FRONTDOOR_SP_ID" --query id -o tsv 2>/dev/null || az ad sp create --id "$FRONTDOOR_SP_ID" --query id -o tsv)
 echo "Azure FrontDoor service object ID: $FRONTDOOR_OBJECT_ID"
 
 # Create Claranet group
@@ -212,7 +247,7 @@ then
   printf "\n"
   echo "Creating Group \"$GROUP_NAME\""
   # TODO manage fails
-  GROUP_OBJECT_ID=$(az ad group create --display-name "$GROUP_NAME" --mail-nickname "$(cat /proc/sys/kernel/random/uuid)" --query objectId -o tsv)
+  GROUP_OBJECT_ID=$(az ad group create --display-name "$GROUP_NAME" --mail-nickname "$(cat /proc/sys/kernel/random/uuid)" --query id -o tsv)
   echo "Done creating Group with id $GROUP_OBJECT_ID"
   echo "You will need to invite members in this group."
 
@@ -230,7 +265,7 @@ then
     for SUB in $SUBSCRIPTION_IDS
     do
       printf "\n"
-      echo "Assigning $GROUP_ROLE right for group $GROUP_OBJECT_ID on subscription $SUB"
+      echo "Assigning '$GROUP_ROLE' right for group '$GROUP_NAME' on subscription '$SUB'"
       # shellcheck disable=SC2034
       for try in {1..30}
       do
@@ -251,21 +286,27 @@ echo "Please send all the following information ${bldred}to your Claranet contac
 cat <<EOT | tee ~/"$FILENAME"
 
 ========================== Sensitive information ===========================================================
-Tenant id:                                    $TENANT_ID
-Tenant name:                                  $TENANT_NAME
-Service Principal Name:                       $SP_NAME
-Service Principal App id:                     $SP_APP_ID
-Service Principal App secret:                 $SP_APP_SECRET
-Service Principal Object id:                  $SP_OBJECT_ID
-Service Principal Passwords expiration date:  $(az ad sp credential list --id "$SP_APP_ID" --query "[].[customKeyIdentifier, endDate]" -o tsv | column -t | sed -E 's/T([0-9]{2}[:\.]){3}[0-9]{6}\+([0-9]{2}:?){2}//' | sed '2,$s/^/                                              /g')
-Assigned subscriptions:                       $(if [ -z "$SUBSCRIPTION_IDS" ]; then echo "${ora}(No subscription assigned)${txtrst}"; else echo "$SUBSCRIPTION_IDS" | sed "s/ /\n                   /g"; fi)
-FrontDoor identity object id:                 $FRONTDOOR_OBJECT_ID
-Claranet AD group name:                       $GROUP_NAME
-Claranet AD group object id:                  $GROUP_OBJECT_ID
-Claranet AD group role:                       $GROUP_ROLE
-Reservation Reader Role assigned:             $RESERVATIONREADER
+Tenant id:                                            $TENANT_ID
+Tenant name:                                          $TENANT_NAME
+Service Principal Reader Name:                        $SP_NAME
+Service Principal Reader App id:                      ${SP_HASH[$SP_NAME"_APP_ID"]}
+Service Principal Reader App secret:                  ${SP_HASH[$SP_NAME"_APP_SECRET"]}
+Service Principal Reader Object id:                   ${SP_HASH[$SP_NAME"_OBJECT_ID"]}
+Service Principal Reader Passwords expiration date:   $(az ad app show --id "${SP_HASH[$SP_NAME"_APP_ID"]}" --query "passwordCredentials[].endDateTime" -o tsv | column -t |  sed -E 's/([0-9]{4}-[0-9]{2}-[0-9]{2})T([0-9]{2}:[0-9]{2}:[0-9]{2})Z/\1 \2 (UTC)/')
+Service Principal Deploy Name:                        $SP_NAME_DEPLOY
+Service Principal Deploy App id:                      ${SP_HASH[$SP_NAME_DEPLOY"_APP_ID"]}
+Service Principal Deploy App secret:                  ${SP_HASH[$SP_NAME_DEPLOY"_APP_SECRET"]}
+Service Principal Deploy Object id:                   ${SP_HASH[$SP_NAME_DEPLOY"_OBJECT_ID"]}
+Service Principal Deploy Passwords expiration date:   $(az ad app show --id "${SP_HASH[$SP_NAME_DEPLOY"_APP_ID"]}" --query "passwordCredentials[].endDateTime" -o tsv | column -t |  sed -E 's/([0-9]{4}-[0-9]{2}-[0-9]{2})T([0-9]{2}:[0-9]{2}:[0-9]{2})Z/\1 \2 (UTC)/')
+Assigned subscriptions:                               $(if [ -z "$SUBSCRIPTION_IDS" ]; then echo "${ora}(No subscription assigned)${txtrst}"; else echo "$SUBSCRIPTION_IDS" | sed "s/ /\n                   /g"; fi)
+FrontDoor identity object id:                         $FRONTDOOR_OBJECT_ID
+Reservation Reader Role assigned:                     $RESERVATIONREADER
+Claranet AD group name:                               $GROUP_NAME
+Claranet AD group object id:                          $GROUP_OBJECT_ID
+Claranet AD group role:                               $GROUP_ROLE
 ============================================================================================================
 
 EOT
 
-echo "Note: the previous information has been stored in ~/${FILENAME} file."
+echo "Note: the previous ${bldred}sensitive${txtrst} information has been stored in ~/${FILENAME} file."
+echo "It's recommended to remove ~/${FILENAME} file after usage."

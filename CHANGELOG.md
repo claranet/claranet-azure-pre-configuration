@@ -1,3 +1,8 @@
+# Unreleased
+
+Added
+  * AZ-801: Add Reservations Reader role at the tenant level to get Shared reservations
+
 # v1.1.0 - 2022-01-14
 
 Added

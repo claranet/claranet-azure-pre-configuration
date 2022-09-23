@@ -1,7 +1,11 @@
-# Unreleased
+# v1.2.0 - 2022-09-23
 
 Added
   * AZ-801: Add Reservations Reader role at the tenant level to get Shared reservations
+  * AZ-842: Add a new `claranet-deploy` Service Principal for CI/CD purpose
+
+Fixed
+  * AZ-842: Fix script with latest `azure-cli` updates, improve script
 
 # v1.1.0 - 2022-01-14
 

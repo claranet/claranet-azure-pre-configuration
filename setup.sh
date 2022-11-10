@@ -33,7 +33,6 @@ DEFAULT_SPNAME="claranet-tools"
 DEFAULT_SPNAME_DEPLOY="claranet-deploy"
 DEFAULT_SP_PWD_DURATION_YEARS=1
 DEFAULT_GROUPNAME="Claranet DevOps"
-FRONTDOOR_SP_ID="ad0e1c7e-6d38-4ba4-9efd-0bc77ba9f037"
 GROUP_ROLES_OPTIONS="Owner Contributor"
 SP_ROLES_LIST=("Reader" "Cost Management Reader" "Log Analytics Reader")
 SP_DEPLOY_ROLES_LIST=("Contributor" "User Access Administrator")
@@ -228,12 +227,6 @@ then
   printf "\n"
 fi
 
-# Getting Azure FrontDoor Object ID from service principal ID
-printf "\n\n"
-echo "Fetching Azure FrontDoor service object ID"
-FRONTDOOR_OBJECT_ID=$(az ad sp show --id "$FRONTDOOR_SP_ID" --query id -o tsv 2>/dev/null || az ad sp create --id "$FRONTDOOR_SP_ID" --query id -o tsv)
-echo "Azure FrontDoor service object ID: $FRONTDOOR_OBJECT_ID"
-
 # Create Claranet group
 printf "\n\n"
 read -n 1 -r -p "Would you like to create a group in Active Directory for Claranet users (Recommended) ? (Y/n): " PROCEED
@@ -303,7 +296,6 @@ Service Principal Deploy App Object id:               ${SP_HASH[$SP_NAME_DEPLOY"
 Service Principal Deploy SP Object id:                ${SP_HASH[$SP_NAME_DEPLOY"_SP_OBJECT_ID"]}
 Service Principal Deploy Passwords expiration date:   $(az ad app show --id "${SP_HASH[$SP_NAME_DEPLOY"_APP_ID"]}" --query "passwordCredentials[].endDateTime" -o tsv | column -t |  sed -E 's/([0-9]{4}-[0-9]{2}-[0-9]{2})T([0-9]{2}:[0-9]{2}:[0-9]{2})Z/\1 \2 (UTC)/')
 Assigned subscriptions:                               $(if [ -z "$SUBSCRIPTION_IDS" ]; then echo "${ora}(No subscription assigned)${txtrst}"; else echo "$SUBSCRIPTION_IDS" | sed "s/ /\n                   /g"; fi)
-FrontDoor identity object id:                         $FRONTDOOR_OBJECT_ID
 Reservation Reader Role assigned:                     $RESERVATIONREADER
 Claranet AD group name:                               $GROUP_NAME
 Claranet AD group object id:                          $GROUP_OBJECT_ID

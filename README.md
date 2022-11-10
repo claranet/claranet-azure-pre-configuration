@@ -16,8 +16,6 @@ This includes:
     * [_Contributor_](https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#contributor) for Claranet deployment tools
     * [_User Access Administrator_](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#user-access-administrator) for Claranet deployment tools
 * Optional creation of a "Claranet DevOps" user group and rights assignment on subscriptions
-* FrontDoor service principal creation for FrontDoor identity management. 
-  See [Related documentation](https://docs.microsoft.com/en-us/azure/frontdoor/standard-premium/how-to-configure-https-custom-domain#register-azure-front-door)
 
 A report is generated at the end of the script and needs to be provided to Claranet **in a secure way**.
 

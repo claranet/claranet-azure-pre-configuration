@@ -1,3 +1,8 @@
+# Unreleased
+
+Changed
+  * AZ-904: Remove FrontDoor object ID generation since Managed Identities feature is GA
+
 # v1.2.2 - 2023-01-20
 
 Fixed

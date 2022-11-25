@@ -1,3 +1,8 @@
+# v1.2.1 - 2022-11-25
+
+Added
+  * Add SP Object ID in outputs
+
 # v1.2.0 - 2022-09-23
 
 Added

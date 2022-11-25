@@ -142,8 +142,10 @@ do
   fi
 done
 
-SP_HASH[$SP_NAME"_OBJECT_ID"]=$(az ad app show --id "${SP_HASH[$SP_NAME"_APP_ID"]}" --query 'id' -o tsv)
-SP_HASH[$SP_NAME_DEPLOY"_OBJECT_ID"]=$(az ad app show --id "${SP_HASH[$SP_NAME_DEPLOY"_APP_ID"]}" --query 'id' -o tsv)
+SP_HASH[$SP_NAME"_APP_OBJECT_ID"]=$(az ad app show --id "${SP_HASH[$SP_NAME"_APP_ID"]}" --query 'id' -o tsv)
+SP_HASH[$SP_NAME"_SP_OBJECT_ID"]=$(az ad sp show --id "${SP_HASH[$SP_NAME"_APP_ID"]}" --query 'id' -o tsv)
+SP_HASH[$SP_NAME_DEPLOY"_APP_OBJECT_ID"]=$(az ad app show --id "${SP_HASH[$SP_NAME_DEPLOY"_APP_ID"]}" --query 'id' -o tsv)
+SP_HASH[$SP_NAME_DEPLOY"_SP_OBJECT_ID"]=$(az ad app show --id "${SP_HASH[$SP_NAME_DEPLOY"_APP_ID"]}" --query 'id' -o tsv)
 
 cat <<EOT
 
@@ -291,12 +293,14 @@ Tenant name:                                          $TENANT_NAME
 Service Principal Reader Name:                        $SP_NAME
 Service Principal Reader App id:                      ${SP_HASH[$SP_NAME"_APP_ID"]}
 Service Principal Reader App secret:                  ${SP_HASH[$SP_NAME"_APP_SECRET"]}
-Service Principal Reader Object id:                   ${SP_HASH[$SP_NAME"_OBJECT_ID"]}
+Service Principal Reader App Object id:               ${SP_HASH[$SP_NAME"_APP_OBJECT_ID"]}
+Service Principal Reader SP Object id:                ${SP_HASH[$SP_NAME"_SP_OBJECT_ID"]}
 Service Principal Reader Passwords expiration date:   $(az ad app show --id "${SP_HASH[$SP_NAME"_APP_ID"]}" --query "passwordCredentials[].endDateTime" -o tsv | column -t |  sed -E 's/([0-9]{4}-[0-9]{2}-[0-9]{2})T([0-9]{2}:[0-9]{2}:[0-9]{2})Z/\1 \2 (UTC)/')
 Service Principal Deploy Name:                        $SP_NAME_DEPLOY
 Service Principal Deploy App id:                      ${SP_HASH[$SP_NAME_DEPLOY"_APP_ID"]}
 Service Principal Deploy App secret:                  ${SP_HASH[$SP_NAME_DEPLOY"_APP_SECRET"]}
-Service Principal Deploy Object id:                   ${SP_HASH[$SP_NAME_DEPLOY"_OBJECT_ID"]}
+Service Principal Deploy App Object id:               ${SP_HASH[$SP_NAME_DEPLOY"_APP_OBJECT_ID"]}
+Service Principal Deploy SP Object id:                ${SP_HASH[$SP_NAME_DEPLOY"_SP_OBJECT_ID"]}
 Service Principal Deploy Passwords expiration date:   $(az ad app show --id "${SP_HASH[$SP_NAME_DEPLOY"_APP_ID"]}" --query "passwordCredentials[].endDateTime" -o tsv | column -t |  sed -E 's/([0-9]{4}-[0-9]{2}-[0-9]{2})T([0-9]{2}:[0-9]{2}:[0-9]{2})Z/\1 \2 (UTC)/')
 Assigned subscriptions:                               $(if [ -z "$SUBSCRIPTION_IDS" ]; then echo "${ora}(No subscription assigned)${txtrst}"; else echo "$SUBSCRIPTION_IDS" | sed "s/ /\n                   /g"; fi)
 FrontDoor identity object id:                         $FRONTDOOR_OBJECT_ID

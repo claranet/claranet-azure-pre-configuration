@@ -1,3 +1,8 @@
+# v1.2.2 - 2023-01-20
+
+Fixed
+  * Fix SP Object ID in outputs
+
 # v1.2.1 - 2022-11-25
 
 Added

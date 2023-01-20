@@ -145,7 +145,7 @@ done
 SP_HASH[$SP_NAME"_APP_OBJECT_ID"]=$(az ad app show --id "${SP_HASH[$SP_NAME"_APP_ID"]}" --query 'id' -o tsv)
 SP_HASH[$SP_NAME"_SP_OBJECT_ID"]=$(az ad sp show --id "${SP_HASH[$SP_NAME"_APP_ID"]}" --query 'id' -o tsv)
 SP_HASH[$SP_NAME_DEPLOY"_APP_OBJECT_ID"]=$(az ad app show --id "${SP_HASH[$SP_NAME_DEPLOY"_APP_ID"]}" --query 'id' -o tsv)
-SP_HASH[$SP_NAME_DEPLOY"_SP_OBJECT_ID"]=$(az ad app show --id "${SP_HASH[$SP_NAME_DEPLOY"_APP_ID"]}" --query 'id' -o tsv)
+SP_HASH[$SP_NAME_DEPLOY"_SP_OBJECT_ID"]=$(az ad sp show --id "${SP_HASH[$SP_NAME_DEPLOY"_APP_ID"]}" --query 'id' -o tsv)
 
 cat <<EOT
 

@@ -1,3 +1,12 @@
+# Unreleased
+
+Changed
+  * AZ-1068: Optional creation of deployment Service Principal
+
+Fixed
+  * AZ-1057: Handle subscription role assignment error
+  * AZ-1004: Handle reservation reader role assignment error
+
 # v1.3.0
 
 Changed

@@ -1,4 +1,4 @@
-# Unreleased
+# v1.4.0 - 2023-05-26
 
 Changed
   * AZ-1068: Optional creation of deployment Service Principal
@@ -7,7 +7,7 @@ Fixed
   * AZ-1057: Handle subscription role assignment error
   * AZ-1004: Handle reservation reader role assignment error
 
-# v1.3.0
+# v1.3.0 - 2023-02-10
 
 Changed
   * AZ-904: Remove FrontDoor object ID generation since Managed Identities feature is GA

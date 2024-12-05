@@ -1,3 +1,8 @@
+# v1.5.0 - 2024-12-05
+
+Fixed
+  * Role assignment issue due to AzCLI parameters change
+
 # v1.4.0 - 2023-05-26
 
 Changed

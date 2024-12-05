@@ -204,6 +204,7 @@ do
       for try in {1..10}
       do
         # We need to loop due to Azure AD propagation latency
+        # https://github.com/MicrosoftDocs/azure-docs-cli/blob/main/docs-ref-conceptual/release-notes-azure-cli.md#role-1
         az role assignment create --assignee "${SP_HASH[$SP_NAME"_APP_ID"]}" --role "$role" --scope "/subscriptions/$SUBSCRIPTION_ID" > /dev/null 2>&1 && SUCCESS="Yes" && break
         echo -n "."
         sleep 3
